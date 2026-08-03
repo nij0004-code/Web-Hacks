@@ -1,164 +1,233 @@
 (function () {
-    if (window.cookieGodLoaded) return;
-    window.cookieGodLoaded = true;
+    if (window.cookieGodClient) return;
+    window.cookieGodClient = true;
 
-    console.log("🍪 Cookie God OP Loaded");
+    // ===== NOTIFICATION =====
+    function notify(text) {
+        const n = document.createElement("div");
+        n.innerText = text;
+        n.style = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg,#00ff9c,#00c3ff);
+            color: black;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            z-index: 999999;
+            box-shadow: 0 0 15px #00ff9c;
+        `;
+        document.body.appendChild(n);
+        setTimeout(() => n.remove(), 3000);
+    }
 
-    let autoClick = false;
-    let autoBuy = false;
-    let autoGolden = false;
+    notify("🍪 Cookie God loading in – Built by SyncX");
 
-    // ===== GUI =====
+    let state = {
+        autoClick: false,
+        autoBuy: false,
+        autoGolden: false,
+        infiniteCookies: false,
+        freezeCookies: false
+    };
+
+    // ===== GUI BASE =====
     const gui = document.createElement("div");
     gui.style = `
         position: fixed;
         top: 100px;
         left: 100px;
-        background: #111;
-        color: #0f0;
-        padding: 10px;
-        border: 2px solid #0f0;
-        z-index: 999999;
+        width: 280px;
+        height: 360px;
+        background: rgba(20,20,30,0.85);
+        backdrop-filter: blur(12px);
+        border-radius: 14px;
+        color: #eafff7;
         font-family: monospace;
-        width: 230px;
-        cursor: move;
+        z-index: 999999;
+        box-shadow: 0 0 25px #00ff9c55;
+        overflow: hidden;
     `;
-    gui.innerHTML = `<b>🍪 Cookie God</b><br><br>`;
     document.body.appendChild(gui);
 
-    function addButton(name, fn) {
-        let btn = document.createElement("button");
+    // HEADER
+    const header = document.createElement("div");
+    header.innerHTML = `<b>🍪 Cookie God</b>`;
+    header.style = `
+        padding: 10px;
+        background: linear-gradient(90deg,#00ff9c,#00c3ff);
+        color: black;
+        cursor: move;
+        font-weight: bold;
+    `;
+    gui.appendChild(header);
+
+    // TABS
+    const tabs = document.createElement("div");
+    tabs.style = `display:flex;`;
+    gui.appendChild(tabs);
+
+    const content = document.createElement("div");
+    content.style = `
+        padding:10px;
+        height: 280px;
+        overflow-y: auto;
+    `;
+    gui.appendChild(content);
+
+    function createTab(name) {
+        const btn = document.createElement("div");
         btn.innerText = name;
         btn.style = `
-            width: 100%;
-            margin: 3px 0;
-            background: black;
-            color: #0f0;
-            border: 1px solid #0f0;
-            cursor: pointer;
+            flex:1;
+            text-align:center;
+            padding:6px;
+            cursor:pointer;
+            background:#111;
+            border-right:1px solid #333;
         `;
-        btn.onclick = fn;
-        gui.appendChild(btn);
+        tabs.appendChild(btn);
+
+        const page = document.createElement("div");
+        page.style.display = "none";
+        content.appendChild(page);
+
+        btn.onclick = () => {
+            [...content.children].forEach(c => c.style.display = "none");
+            page.style.display = "block";
+        };
+
+        return page;
     }
 
-    function addSelect(options, onChange) {
-        let select = document.createElement("select");
-        select.style = "width:100%; margin:5px 0; background:black; color:#0f0;";
-        options.forEach(opt => {
-            let o = document.createElement("option");
-            o.value = opt;
-            o.text = opt;
-            select.appendChild(o);
-        });
-        select.onchange = () => onChange(select.value);
-        gui.appendChild(select);
-        return select;
+    function button(parent, name, fn) {
+        const b = document.createElement("button");
+        b.innerText = name;
+        b.style = `
+            width:100%;
+            margin:4px 0;
+            padding:6px;
+            border-radius:8px;
+            border:none;
+            background: linear-gradient(135deg,#00ff9c,#00c3ff);
+            color:black;
+            cursor:pointer;
+            transition:0.2s;
+        `;
+        b.onmouseenter = () => b.style.opacity = "0.8";
+        b.onmouseleave = () => b.style.opacity = "1";
+        b.onclick = fn;
+        parent.appendChild(b);
     }
 
-    let selectedItem = null;
-
-    // ===== DROPDOWN FOR ITEMS =====
-    const itemNames = Object.keys(Game.Objects);
-    addSelect(itemNames, (val) => {
-        selectedItem = val;
-    });
-
-    // ===== FEATURES =====
-
-    addButton("Toggle Auto Click", () => autoClick = !autoClick);
-    addButton("Toggle Auto Buy", () => autoBuy = !autoBuy);
-    addButton("Toggle Golden Click", () => autoGolden = !autoGolden);
-
-    addButton("Set Cookies (1T)", () => {
-        Game.cookies = 1e12;
-    });
-
-    addButton("Max Selected Item", () => {
-        if (!selectedItem) return;
-        let obj = Game.Objects[selectedItem];
-        while (obj.price < Game.cookies) {
-            obj.buy();
+    function toggle(parent, name, key) {
+        const b = document.createElement("button");
+        function update() {
+            b.innerText = `${name}: ${state[key] ? "ON" : "OFF"}`;
         }
+        b.onclick = () => {
+            state[key] = !state[key];
+            update();
+        };
+        b.style = `
+            width:100%;
+            margin:4px 0;
+            padding:6px;
+            border-radius:8px;
+            border:none;
+            background:#222;
+            color:#00ff9c;
+            cursor:pointer;
+        `;
+        update();
+        parent.appendChild(b);
+    }
+
+    // ===== TABS =====
+    const autoTab = createTab("Auto");
+    const powerTab = createTab("Power");
+    const funTab = createTab("Fun");
+
+    // DEFAULT OPEN
+    content.children[0].style.display = "block";
+
+    // ===== AUTO TAB =====
+    toggle(autoTab, "Auto Click", "autoClick");
+    toggle(autoTab, "Auto Buy", "autoBuy");
+    toggle(autoTab, "Auto Golden", "autoGolden");
+
+    // ===== POWER TAB =====
+    button(powerTab, "Set Cookies", () => {
+        let val = prompt("Amount:");
+        if (val) Game.cookies = parseFloat(val);
     });
 
-    addButton("MAX EVERYTHING 💥", () => {
+    toggle(powerTab, "Infinite Cookies", "infiniteCookies");
+    toggle(powerTab, "Freeze Cookies", "freezeCookies");
+
+    button(powerTab, "MAX EVERYTHING 💥", () => {
         Game.cookies = 1e300;
-
-        Game.ObjectsById.forEach(obj => {
-            for (let i = 0; i < 1000; i++) obj.buy();
-        });
-
-        Game.UpgradesById.forEach(up => {
-            if (up.canBuy()) up.buy(true);
-            up.unlocked = true;
-        });
-
-        // unlock achievements
+        Game.ObjectsById.forEach(o => { for (let i=0;i<1000;i++) o.buy(); });
+        Game.UpgradesById.forEach(u => { u.unlocked = true; u.buy(true); });
         Game.AchievementsById.forEach(a => a.won = 1);
-
-        // sugar lumps
         Game.lumps = 999;
-
-        // prestige
-        Game.heavenlyChips += 1e6;
-        Game.heavenlyCookies += 1e6;
-
-        Game.RebuildUpgrades();
     });
 
-    addButton("Unlock ALL (Open Sesame)", () => {
-        Game.UpgradesById.forEach(up => {
-            up.unlocked = true;
-            up.bought = true;
-        });
-
-        Game.AchievementsById.forEach(a => a.won = 1);
-
-        Game.lumps = 999;
-        Game.recalculateGains = 1;
+    button(powerTab, "Unlock ALL", () => {
+        Game.UpgradesById.forEach(u => { u.unlocked = true; u.bought = true; });
     });
 
-    addButton("Golden Rain 🌟", () => {
+    // ===== FUN TAB =====
+    button(funTab, "Golden Storm", () => {
         setInterval(() => {
             Game.shimmers.push(new Game.shimmer("golden"));
-        }, 500);
+        }, 200);
+    });
+
+    button(funTab, "Force Frenzy", () => {
+        Game.gainBuff("frenzy", 9999, 7);
+    });
+
+    button(funTab, "Click Frenzy", () => {
+        Game.gainBuff("clickFrenzy", 9999, 777);
     });
 
     // ===== LOOP =====
     setInterval(() => {
-        if (autoClick) Game.ClickCookie();
+        if (state.autoClick) Game.ClickCookie();
 
-        if (autoBuy) {
-            Game.UpgradesInStore.forEach(up => {
-                if (up.canBuy()) up.buy();
-            });
-
+        if (state.autoBuy) {
+            Game.UpgradesInStore.forEach(u => u.canBuy() && u.buy());
             let best = Game.ObjectsById.filter(o => o.price < Game.cookies);
-            if (best.length > 0) best[best.length - 1].buy();
+            if (best.length) best[best.length - 1].buy();
         }
 
-        if (autoGolden) {
+        if (state.autoGolden) {
             Game.shimmers.forEach(s => s.pop());
         }
+
+        if (state.infiniteCookies) Game.cookies = 1e300;
+        if (state.freezeCookies) Game.cookies = Math.max(Game.cookies, 1e12);
 
     }, 50);
 
     // ===== DRAG =====
-    let isDragging = false, offsetX, offsetY;
+    let dragging = false, dx, dy;
 
-    gui.addEventListener("mousedown", e => {
-        isDragging = true;
-        offsetX = e.clientX - gui.offsetLeft;
-        offsetY = e.clientY - gui.offsetTop;
-    });
+    header.onmousedown = e => {
+        dragging = true;
+        dx = e.clientX - gui.offsetLeft;
+        dy = e.clientY - gui.offsetTop;
+    };
 
-    document.addEventListener("mouseup", () => isDragging = false);
+    document.onmouseup = () => dragging = false;
 
-    document.addEventListener("mousemove", e => {
-        if (isDragging) {
-            gui.style.left = (e.clientX - offsetX) + "px";
-            gui.style.top = (e.clientY - offsetY) + "px";
+    document.onmousemove = e => {
+        if (dragging) {
+            gui.style.left = (e.clientX - dx) + "px";
+            gui.style.top = (e.clientY - dy) + "px";
         }
-    });
+    };
 
 })();
