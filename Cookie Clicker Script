@@ -1,0 +1,164 @@
+(function () {
+    if (window.cookieGodLoaded) return;
+    window.cookieGodLoaded = true;
+
+    console.log("🍪 Cookie God OP Loaded");
+
+    let autoClick = false;
+    let autoBuy = false;
+    let autoGolden = false;
+
+    // ===== GUI =====
+    const gui = document.createElement("div");
+    gui.style = `
+        position: fixed;
+        top: 100px;
+        left: 100px;
+        background: #111;
+        color: #0f0;
+        padding: 10px;
+        border: 2px solid #0f0;
+        z-index: 999999;
+        font-family: monospace;
+        width: 230px;
+        cursor: move;
+    `;
+    gui.innerHTML = `<b>🍪 Cookie God</b><br><br>`;
+    document.body.appendChild(gui);
+
+    function addButton(name, fn) {
+        let btn = document.createElement("button");
+        btn.innerText = name;
+        btn.style = `
+            width: 100%;
+            margin: 3px 0;
+            background: black;
+            color: #0f0;
+            border: 1px solid #0f0;
+            cursor: pointer;
+        `;
+        btn.onclick = fn;
+        gui.appendChild(btn);
+    }
+
+    function addSelect(options, onChange) {
+        let select = document.createElement("select");
+        select.style = "width:100%; margin:5px 0; background:black; color:#0f0;";
+        options.forEach(opt => {
+            let o = document.createElement("option");
+            o.value = opt;
+            o.text = opt;
+            select.appendChild(o);
+        });
+        select.onchange = () => onChange(select.value);
+        gui.appendChild(select);
+        return select;
+    }
+
+    let selectedItem = null;
+
+    // ===== DROPDOWN FOR ITEMS =====
+    const itemNames = Object.keys(Game.Objects);
+    addSelect(itemNames, (val) => {
+        selectedItem = val;
+    });
+
+    // ===== FEATURES =====
+
+    addButton("Toggle Auto Click", () => autoClick = !autoClick);
+    addButton("Toggle Auto Buy", () => autoBuy = !autoBuy);
+    addButton("Toggle Golden Click", () => autoGolden = !autoGolden);
+
+    addButton("Set Cookies (1T)", () => {
+        Game.cookies = 1e12;
+    });
+
+    addButton("Max Selected Item", () => {
+        if (!selectedItem) return;
+        let obj = Game.Objects[selectedItem];
+        while (obj.price < Game.cookies) {
+            obj.buy();
+        }
+    });
+
+    addButton("MAX EVERYTHING 💥", () => {
+        Game.cookies = 1e300;
+
+        Game.ObjectsById.forEach(obj => {
+            for (let i = 0; i < 1000; i++) obj.buy();
+        });
+
+        Game.UpgradesById.forEach(up => {
+            if (up.canBuy()) up.buy(true);
+            up.unlocked = true;
+        });
+
+        // unlock achievements
+        Game.AchievementsById.forEach(a => a.won = 1);
+
+        // sugar lumps
+        Game.lumps = 999;
+
+        // prestige
+        Game.heavenlyChips += 1e6;
+        Game.heavenlyCookies += 1e6;
+
+        Game.RebuildUpgrades();
+    });
+
+    addButton("Unlock ALL (Open Sesame)", () => {
+        Game.UpgradesById.forEach(up => {
+            up.unlocked = true;
+            up.bought = true;
+        });
+
+        Game.AchievementsById.forEach(a => a.won = 1);
+
+        Game.lumps = 999;
+        Game.recalculateGains = 1;
+    });
+
+    addButton("Golden Rain 🌟", () => {
+        setInterval(() => {
+            Game.shimmers.push(new Game.shimmer("golden"));
+        }, 500);
+    });
+
+    // ===== LOOP =====
+    setInterval(() => {
+        if (autoClick) Game.ClickCookie();
+
+        if (autoBuy) {
+            Game.UpgradesInStore.forEach(up => {
+                if (up.canBuy()) up.buy();
+            });
+
+            let best = Game.ObjectsById.filter(o => o.price < Game.cookies);
+            if (best.length > 0) best[best.length - 1].buy();
+        }
+
+        if (autoGolden) {
+            Game.shimmers.forEach(s => s.pop());
+        }
+
+    }, 50);
+
+    // ===== DRAG =====
+    let isDragging = false, offsetX, offsetY;
+
+    gui.addEventListener("mousedown", e => {
+        isDragging = true;
+        offsetX = e.clientX - gui.offsetLeft;
+        offsetY = e.clientY - gui.offsetTop;
+    });
+
+    document.addEventListener("mouseup", () => isDragging = false);
+
+    document.addEventListener("mousemove", e => {
+        if (isDragging) {
+            gui.style.left = (e.clientX - offsetX) + "px";
+            gui.style.top = (e.clientY - offsetY) + "px";
+        }
+    });
+
+})();
