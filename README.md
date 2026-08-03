@@ -25,9 +25,4 @@ This Repo contains scripts for vaious website , all are safe and simple to use.
 
 
 ## 📜 License
-
-MIT License
-
----
-
-> Learn security. Build responsibly. 🧑‍💻
+Share this to everyone so that they can use it!
