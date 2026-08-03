@@ -1,4 +1,4 @@
-# 🌐 Web Security Testing Scripts
+# 🌐 Scripts
 
 This repository contains a collection of scripts read to be used in real websites!
 
