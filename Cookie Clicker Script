@@ -1,233 +1,174 @@
-(function () {
-    if (window.cookieGodClient) return;
-    window.cookieGodClient = true;
+(async function () {
+    if (!window.Game) return alert("Open Cookie Clicker first!");
 
-    // ===== NOTIFICATION =====
-    function notify(text) {
-        const n = document.createElement("div");
-        n.innerText = text;
-        n.style = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: linear-gradient(135deg,#00ff9c,#00c3ff);
-            color: black;
-            padding: 10px 15px;
-            border-radius: 8px;
-            font-family: monospace;
-            z-index: 999999;
-            box-shadow: 0 0 15px #00ff9c;
-        `;
-        document.body.appendChild(n);
-        setTimeout(() => n.remove(), 3000);
-    }
+    Game.Notify("Cookie God Loaded", "Smooth UI Edition • SyncX", [16,5]);
 
-    notify("🍪 Cookie God loading in – Built by SyncX");
-
-    let state = {
-        autoClick: false,
-        autoBuy: false,
-        autoGolden: false,
-        infiniteCookies: false,
-        freezeCookies: false
-    };
-
-    // ===== GUI BASE =====
-    const gui = document.createElement("div");
-    gui.style = `
-        position: fixed;
-        top: 100px;
-        left: 100px;
-        width: 280px;
-        height: 360px;
-        background: rgba(20,20,30,0.85);
-        backdrop-filter: blur(12px);
-        border-radius: 14px;
-        color: #eafff7;
-        font-family: monospace;
-        z-index: 999999;
-        box-shadow: 0 0 25px #00ff9c55;
-        overflow: hidden;
+    // ================= UI =================
+    const ui = document.createElement("div");
+    ui.style = `
+        position:fixed;
+        top:${localStorage.cg_top || "100px"};
+        left:${localStorage.cg_left || "100px"};
+        width:420px;height:520px;
+        background:rgba(15,15,20,0.9);
+        backdrop-filter:blur(12px);
+        border-radius:14px;
+        box-shadow:0 0 25px rgba(0,255,255,0.15);
+        display:flex;flex-direction:column;
+        z-index:999999;color:white;
+        font-family:sans-serif;
+        resize:both;
+        overflow:hidden;
     `;
-    document.body.appendChild(gui);
 
     // HEADER
     const header = document.createElement("div");
-    header.innerHTML = `<b>🍪 Cookie God</b>`;
+    header.innerHTML = `
+        🍪 Cookie God
+        <span style="float:right;cursor:pointer;" id="minBtn">—</span>
+    `;
     header.style = `
-        padding: 10px;
-        background: linear-gradient(90deg,#00ff9c,#00c3ff);
-        color: black;
-        cursor: move;
-        font-weight: bold;
-    `;
-    gui.appendChild(header);
-
-    // TABS
-    const tabs = document.createElement("div");
-    tabs.style = `display:flex;`;
-    gui.appendChild(tabs);
-
-    const content = document.createElement("div");
-    content.style = `
         padding:10px;
-        height: 280px;
-        overflow-y: auto;
+        background:#111;
+        cursor:move;
+        user-select:none;
     `;
-    gui.appendChild(content);
 
-    function createTab(name) {
-        const btn = document.createElement("div");
-        btn.innerText = name;
-        btn.style = `
-            flex:1;
-            text-align:center;
-            padding:6px;
+    // CONTENT
+    const content = document.createElement("div");
+    content.style = `flex:1;overflow:auto;padding:10px;`;
+
+    // QUICK BAR
+    const quick = document.createElement("div");
+    quick.style = `display:flex;gap:5px;margin-bottom:8px;`;
+
+    function qbtn(name, fn){
+        let b=document.createElement("button");
+        b.innerText=name;
+        b.style="flex:1;padding:6px;background:#222;border:none;color:#0ff;border-radius:6px;";
+        b.onclick=fn;
+        quick.appendChild(b);
+    }
+
+    qbtn("Max $",()=>Game.cookies=1e300);
+    qbtn("x100 CPS",()=>Game.cookiesPs*=100);
+    qbtn("Golden",()=>Game.shimmers.forEach(s=>s.pop()));
+
+    content.appendChild(quick);
+
+    function btn(name, fn){
+        let b=document.createElement("button");
+        b.innerText=name;
+        b.style=`
+            width:100%;margin:4px 0;padding:8px;
+            background:#1a1f27;border:none;
+            border-radius:8px;color:#0ff;
             cursor:pointer;
-            background:#111;
-            border-right:1px solid #333;
         `;
-        tabs.appendChild(btn);
+        b.onclick=fn;
+        content.appendChild(b);
+    }
 
-        const page = document.createElement("div");
-        page.style.display = "none";
-        content.appendChild(page);
-
-        btn.onclick = () => {
-            [...content.children].forEach(c => c.style.display = "none");
-            page.style.display = "block";
+    function toggle(name, fn){
+        let on=false;
+        let b=document.createElement("button");
+        b.innerText=name+" OFF";
+        b.style=`
+            width:100%;margin:4px 0;padding:8px;
+            background:#1a1f27;border:none;
+            border-radius:8px;color:#0ff;
+        `;
+        b.onclick=()=>{
+            on=!on;
+            b.innerText=name+(on?" ON":" OFF");
+            fn(on);
         };
-
-        return page;
+        content.appendChild(b);
     }
 
-    function button(parent, name, fn) {
-        const b = document.createElement("button");
-        b.innerText = name;
-        b.style = `
-            width:100%;
-            margin:4px 0;
-            padding:6px;
-            border-radius:8px;
-            border:none;
-            background: linear-gradient(135deg,#00ff9c,#00c3ff);
-            color:black;
-            cursor:pointer;
-            transition:0.2s;
-        `;
-        b.onmouseenter = () => b.style.opacity = "0.8";
-        b.onmouseleave = () => b.style.opacity = "1";
-        b.onclick = fn;
-        parent.appendChild(b);
-    }
-
-    function toggle(parent, name, key) {
-        const b = document.createElement("button");
-        function update() {
-            b.innerText = `${name}: ${state[key] ? "ON" : "OFF"}`;
-        }
-        b.onclick = () => {
-            state[key] = !state[key];
-            update();
-        };
-        b.style = `
-            width:100%;
-            margin:4px 0;
-            padding:6px;
-            border-radius:8px;
-            border:none;
-            background:#222;
-            color:#00ff9c;
-            cursor:pointer;
-        `;
-        update();
-        parent.appendChild(b);
-    }
-
-    // ===== TABS =====
-    const autoTab = createTab("Auto");
-    const powerTab = createTab("Power");
-    const funTab = createTab("Fun");
-
-    // DEFAULT OPEN
-    content.children[0].style.display = "block";
-
-    // ===== AUTO TAB =====
-    toggle(autoTab, "Auto Click", "autoClick");
-    toggle(autoTab, "Auto Buy", "autoBuy");
-    toggle(autoTab, "Auto Golden", "autoGolden");
-
-    // ===== POWER TAB =====
-    button(powerTab, "Set Cookies", () => {
-        let val = prompt("Amount:");
-        if (val) Game.cookies = parseFloat(val);
+    // FEATURES
+    btn("Set Cookies",()=>{
+        let v=prompt("Amount:");
+        if(v) Game.cookies=parseFloat(v);
     });
 
-    toggle(powerTab, "Infinite Cookies", "infiniteCookies");
-    toggle(powerTab, "Freeze Cookies", "freezeCookies");
-
-    button(powerTab, "MAX EVERYTHING 💥", () => {
-        Game.cookies = 1e300;
-        Game.ObjectsById.forEach(o => { for (let i=0;i<1000;i++) o.buy(); });
-        Game.UpgradesById.forEach(u => { u.unlocked = true; u.buy(true); });
-        Game.AchievementsById.forEach(a => a.won = 1);
-        Game.lumps = 999;
+    btn("Unlock Everything",()=>{
+        Game.UpgradesById.forEach(u=>u.unlock());
+        Game.AchievementsById.forEach(a=>a.won=1);
     });
 
-    button(powerTab, "Unlock ALL", () => {
-        Game.UpgradesById.forEach(u => { u.unlocked = true; u.bought = true; });
+    btn("Max Buildings",()=>Game.ObjectsById.forEach(o=>o.amount=9999));
+
+    toggle("Auto Click",(on)=>{
+        if(on) window.ac=setInterval(()=>Game.ClickCookie(),1);
+        else clearInterval(window.ac);
     });
 
-    // ===== FUN TAB =====
-    button(funTab, "Golden Storm", () => {
-        setInterval(() => {
-            Game.shimmers.push(new Game.shimmer("golden"));
-        }, 200);
+    toggle("Auto Buy",(on)=>{
+        if(on) window.ab=setInterval(()=>{
+            Game.ObjectsById.forEach(o=>{
+                if(o.getPrice()<Game.cookies) o.buy(1);
+            });
+        },800);
+        else clearInterval(window.ab);
     });
 
-    button(funTab, "Force Frenzy", () => {
-        Game.gainBuff("frenzy", 9999, 7);
+    toggle("Auto Golden",(on)=>{
+        if(on) window.ag=setInterval(()=>{
+            Game.shimmers.forEach(s=>s.pop());
+        },500);
+        else clearInterval(window.ag);
     });
 
-    button(funTab, "Click Frenzy", () => {
-        Game.gainBuff("clickFrenzy", 9999, 777);
+    btn("Golden Storm",()=>{
+        for(let i=0;i<40;i++) Game.shimmer("golden");
     });
 
-    // ===== LOOP =====
-    setInterval(() => {
-        if (state.autoClick) Game.ClickCookie();
+    btn("Open Dev Panel",()=>Game.OpenSesame());
 
-        if (state.autoBuy) {
-            Game.UpgradesInStore.forEach(u => u.canBuy() && u.buy());
-            let best = Game.ObjectsById.filter(o => o.price < Game.cookies);
-            if (best.length) best[best.length - 1].buy();
-        }
+    btn("Close UI",()=>ui.remove());
 
-        if (state.autoGolden) {
-            Game.shimmers.forEach(s => s.pop());
-        }
-
-        if (state.infiniteCookies) Game.cookies = 1e300;
-        if (state.freezeCookies) Game.cookies = Math.max(Game.cookies, 1e12);
-
-    }, 50);
-
-    // ===== DRAG =====
-    let dragging = false, dx, dy;
-
-    header.onmousedown = e => {
-        dragging = true;
-        dx = e.clientX - gui.offsetLeft;
-        dy = e.clientY - gui.offsetTop;
+    // MINIMIZE
+    let minimized=false;
+    header.querySelector("#minBtn").onclick=()=>{
+        minimized=!minimized;
+        content.style.display=minimized?"none":"block";
     };
 
-    document.onmouseup = () => dragging = false;
+    // DRAGGING (SMOOTH)
+    let offsetX=0, offsetY=0, dragging=false;
 
-    document.onmousemove = e => {
-        if (dragging) {
-            gui.style.left = (e.clientX - dx) + "px";
-            gui.style.top = (e.clientY - dy) + "px";
-        }
-    };
+    header.addEventListener("mousedown", e=>{
+        dragging=true;
+        offsetX=e.clientX-ui.offsetLeft;
+        offsetY=e.clientY-ui.offsetTop;
+    });
+
+    document.addEventListener("mousemove", e=>{
+        if(!dragging) return;
+
+        let x=e.clientX-offsetX;
+        let y=e.clientY-offsetY;
+
+        // SNAP TO EDGE
+        if(x<20) x=0;
+        if(y<20) y=0;
+
+        ui.style.left=x+"px";
+        ui.style.top=y+"px";
+    });
+
+    document.addEventListener("mouseup", ()=>{
+        dragging=false;
+
+        // SAVE POSITION
+        localStorage.cg_top=ui.style.top;
+        localStorage.cg_left=ui.style.left;
+    });
+
+    // ADD
+    ui.appendChild(header);
+    ui.appendChild(content);
+    document.body.appendChild(ui);
 
 })();
