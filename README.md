@@ -17,7 +17,7 @@ This Repo contains scripts for vaious website , all are safe and simple to use.
 
 1. Find the file of code for the website you need to hack.
 
-2. Copy the script (ALL OF IT!)
+2. Copy the script (ALL OF IT!) (SAME FOR THE LOADINGSTRING IF YOU GET IT FROM THE SITE)
 
 3. Open inspect elemtent in the website your going to target and paste the script.
 
