@@ -12,7 +12,7 @@
 // @description:zh  Kahoot自动答题器，支持选择题/滑块/排序/开放式问题，答案高亮，隐身模式，自动加入。
 // @description:ru  Автоматический решатель для Kahoot: викторины, слайдеры, сортировка, открытые вопросы, подсветка ответов, стелс-режим, авто-вход.
 // @description:ar  حلّال تلقائي لـ Kahoot يدعم الاختبارات والمنزلقات والترتيب والأسئلة المفتوحة مع إبراز الإجابات ووضع التخفي والانضمام التلقائي.
-// @author       Juls
+// @author       SyncX
 // @match        *://kahoot.it/*
 // @match        *://play.kahoot.it/*
 // @icon         https://raw.githubusercontent.com/JORKLAN/kahoot-cheat/main/assets/fluxus.png
