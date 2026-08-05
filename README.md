@@ -4,6 +4,7 @@ This repository contains a collection of scripts read to be used in real website
 
 > ⚠️ **Important:** THESE SCRIPTS ARE NOT VIRUSES AND SAFE TO USE FROM THIS OFFICIAL REPO
 > AND WEBSITE THAT IS LINKED TO THIS GITHUB REPO AND ACCOUNT.
+> OFFICIAL WEBSITE: https://syncxofficial.netlify.app
 
 ---
 
