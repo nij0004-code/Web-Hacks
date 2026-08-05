@@ -27,4 +27,4 @@ This Repo contains scripts for vaious website , all are safe and simple to use.
 
 
 ## 📜 Contributers!
-Sync built and found Scripts and officical website built by MrXeno
+Sync is the owner of all the scripts and officical website built by MrXeno
