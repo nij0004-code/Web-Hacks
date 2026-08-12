@@ -2,7 +2,7 @@
 
 This repository contains a collection of scripts read to be used in real websites!
 
-> ⚠️ **Important:** Many of these Scipts may not work and are unmaaintained.
+> ⚠️ **Important:** Many of these Scipts may not work and are unmaintained.
 
 > OFFICIAL WEBSITE: https://syncxofficial.netlify.app
 
